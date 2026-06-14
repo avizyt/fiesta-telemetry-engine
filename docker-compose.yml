@@ -4,8 +4,10 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - timescale
-      - redis
+      timescale:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     environment:
       - REDIS_URL=redis://redis:6379/0
       - DATABASE_URL=postgres://postgres:password@timescale:5432/telemetry
@@ -20,6 +22,11 @@ services:
       - POSTGRES_DB=telemetry
     volumes:
       - timescale_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   
   redis:
     image: redis:7-alpine
@@ -27,6 +34,11 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
 volumes:
   timescale_data:
